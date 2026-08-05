@@ -6,6 +6,10 @@ import CarCard from "../components/CarCard";
 import Offer from "../components/Offer";
 import WhyChoose from "../components/WhyChoose";
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaWhatsapp, FaCar, FaTimes, FaCheck } from "react-icons/fa";
+import toyotaSiennaImg from "../assets/cars/toyota-sienna.jpeg";
+import corrollaImg from "../assets/images/corrolla.jpeg";
+import toyotaCorollaImg from "../assets/images/Toyota corrolla.jpeg";
+import toyotaRav4 from "../assets/images/Toyota RAV4.jpeg";
 
 const SAMPLE_CARS = [
   {
@@ -21,18 +25,13 @@ const SAMPLE_CARS = [
     seats: 2,
     image: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80"
   },
-  {
-    id: 2,
-    title: "BMW M5 Competition",
-    brand: "BMW",
-    category: "Sedan",
-    tag: "Popular",
-    dailyRate: 380,
-    speed: "0-60 in 3.2s",
-    transmission: "Automatic",
-    fuel: "Twin-Turbo V8",
-    seats: 5,
-    image: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=800&q=80"
+ {
+  id: 7,
+  title: "Toyota RAV4",
+  brand: "Toyota",
+  category: "SUV",
+  dailyRate: 120,
+  image: toyotaRav4,
   },
   {
     id: 3,
@@ -75,16 +74,16 @@ const SAMPLE_CARS = [
   },
   {
     id: 6,
-    title: "Tesla Model S Plaid",
-    brand: "Tesla",
-    category: "Electric",
-    tag: "EV Plaid",
+    title: "Honda accord 2010 model",
+    brand: "Toyota",
+    category: "Sedan",
+    tag: "Reliable",
     dailyRate: 350,
-    speed: "0-60 in 1.99s",
-    transmission: "Direct Drive",
-    fuel: "Tri-Motor EV",
+    speed: "0-60 in 8.5s",
+    transmission: "Automatic",
+    fuel: "1.8L Petrol",
     seats: 5,
-    image: "https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80"
+    image: corrollaImg,
   },
   {
     id: 7,
@@ -101,20 +100,34 @@ const SAMPLE_CARS = [
   },
   {
     id: 8,
-    title: "Audi RS7 Sportback",
+    title: "Toyota Corolla 2010 model",
     brand: "Audi",
     category: "Sedan",
-    tag: "Performance",
+    tag: "Reliable",
     dailyRate: 390,
     speed: "0-60 in 3.5s",
     transmission: "Quattro Auto",
     fuel: "V8 Twin-Turbo",
     seats: 5,
-    image: "https://images.unsplash.com/photo-1603584173870-7f23fdae1b7a?auto=format&fit=crop&w=800&q=80"
+    image: toyotaCorollaImg,
+  },
+  {
+    id: 9,
+    title: "Toyota Sienna Limited",
+    brand: "Toyota",
+    category: "Minivan",
+    tag:  "Reliable",
+    dailyRate: 180,
+    speed: "0-60 in 7.4s",
+    transmission: "Automatic",
+    fuel: "3.5L V6 Petrol",
+    seats: 8,
+    image: "https://chatgpt.com/backend-api/estuary/content?id=file_0000000006cc81f485dc30c0b6488f13&ts=495875&p=fs&cid=1&sig=b8a116cb4f82c5fa6b5fdeb3fd56f4558e5485f79a1b1396c3758343bb24cfbe&v=0",
+    fallbackImage: toyotaSiennaImg
   }
 ];
 
-const CATEGORIES = ["All", "Sports", "SUV", "Luxury", "Sedan", "Electric"];
+const CATEGORIES = ["All", "Sports", "SUV", "Luxury", "Sedan", "Electric", "Minivan"];
 
 function Home({ onBookingAdded }) {
   const [searchTerm, setSearchTerm] = useState("");

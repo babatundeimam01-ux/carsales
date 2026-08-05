@@ -3,11 +3,22 @@ import { FaHeart, FaRegHeart, FaGasPump, FaTachometerAlt, FaCogs, FaUserFriends,
 
 function CarCard({ car, onBookNow }) {
   const [isLiked, setIsLiked] = useState(false);
+  const [imgSrc, setImgSrc] = useState(car.image);
 
   return (
     <div className="car-card">
       <div className="car-card-image-wrapper">
-        <img src={car.image} alt={car.title} className="car-card-image" loading="lazy" />
+        <img
+          src={imgSrc}
+          alt={car.title}
+          className="car-card-image"
+          loading="lazy"
+          onError={() => {
+            if (car.fallbackImage && imgSrc !== car.fallbackImage) {
+              setImgSrc(car.fallbackImage);
+            }
+          }}
+        />
         <span className={`car-tag ${car.tag ? car.tag.toLowerCase() : ""}`}>{car.tag || car.category}</span>
         <button
           className={`favorite-btn ${isLiked ? "liked" : ""}`}
