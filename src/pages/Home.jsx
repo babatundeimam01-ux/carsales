@@ -1,4 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { getCars } from "../services/carService";
+import { createBooking } from "../services/bookingService";
 import Hero from "../components/Hero";
 import SearchBar from "../components/SearchBar";
 import Category from "../components/Category";
@@ -7,7 +10,7 @@ import Offer from "../components/Offer";
 import WhyChoose from "../components/WhyChoose";
 import { FaPhoneAlt, FaEnvelope, FaMapMarkerAlt, FaWhatsapp, FaCar, FaTimes, FaCheck } from "react-icons/fa";
 import toyotaSiennaImg from "../assets/cars/toyota-sienna.jpeg";
-import corrollaImg from "../assets/images/corrolla.jpeg";
+import corrollaImg from "../assets/images/corolla.jpeg";
 import toyotaCorollaImg from "../assets/images/Toyota corrolla.jpeg";
 import toyotaRav4 from "../assets/images/Toyota RAV4.jpeg";
 
@@ -26,7 +29,7 @@ const SAMPLE_CARS = [
     image: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&w=800&q=80"
   },
  {
-  id: 7,
+  id: 2,
   title: "Toyota RAV4",
   brand: "Toyota",
   category: "SUV",
@@ -75,7 +78,7 @@ const SAMPLE_CARS = [
   {
     id: 6,
     title: "Honda accord 2010 model",
-    brand: "Toyota",
+    brand: "Honda",
     category: "Sedan",
     tag: "Reliable",
     dailyRate: 350,
@@ -83,7 +86,7 @@ const SAMPLE_CARS = [
     transmission: "Automatic",
     fuel: "1.8L Petrol",
     seats: 5,
-    image: corrollaImg,
+    image: corollaImg,
   },
   {
     id: 7,
@@ -122,21 +125,58 @@ const SAMPLE_CARS = [
     transmission: "Automatic",
     fuel: "3.5L V6 Petrol",
     seats: 8,
-    image: "https://chatgpt.com/backend-api/estuary/content?id=file_0000000006cc81f485dc30c0b6488f13&ts=495875&p=fs&cid=1&sig=b8a116cb4f82c5fa6b5fdeb3fd56f4558e5485f79a1b1396c3758343bb24cfbe&v=0",
-    fallbackImage: toyotaSiennaImg
+    image: toyotaSiennaImg,
   }
 ];
 
 const CATEGORIES = ["All", "Sports", "SUV", "Luxury", "Sedan", "Electric", "Minivan"];
 
 function Home({ onBookingAdded }) {
+  const { currentUser } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [bookingModalCar, setBookingModalCar] = useState(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [firestoreCars, setFirestoreCars] = useState([]);
+  const [savingBooking, setSavingBooking] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingForm, setBookingForm] = useState({ fullName: "", phone: "", rentalDate: "", days: 1 });
+
+  // Load cars added from Firestore (via the Car Listing admin page)
+  useEffect(() => {
+    getCars()
+      .then((list) =>
+        setFirestoreCars(
+          list.map((c) => ({
+            id: c.id,
+            title: c.name,
+            brand: c.brand,
+            category: c.category || "SUV",
+            dailyRate: c.dailyRate,
+            seats: c.seats,
+            transmission: c.transmission,
+            fuel: c.fuel,
+            image: c.imageUrl,
+            speed: "—",
+          }))
+        )
+      )
+      .catch((err) => console.warn("Could not load Firestore cars:", err.message));
+  }, []);
+
+  // Combine sample cars with Firestore cars (no duplicates by title)
+  const allCars = useMemo(() => {
+    const merged = [...SAMPLE_CARS];
+    firestoreCars.forEach((fc) => {
+      if (!merged.some((c) => c.title.toLowerCase() === fc.title.toLowerCase())) {
+        merged.push(fc);
+      }
+    });
+    return merged;
+  }, [firestoreCars]);
 
   const filteredCars = useMemo(() => {
-    return SAMPLE_CARS.filter((car) => {
+    return allCars.filter((car) => {
       const matchesCategory =
         selectedCategory === "All" || car.category.toLowerCase() === selectedCategory.toLowerCase();
       const matchesSearch =
@@ -145,22 +185,42 @@ function Home({ onBookingAdded }) {
         car.category.toLowerCase().includes(searchTerm.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [searchTerm, selectedCategory]);
+  }, [allCars, searchTerm, selectedCategory]);
 
   const handleBookNow = (car) => {
     setBookingModalCar(car);
     setBookingConfirmed(false);
   };
 
-  const confirmBooking = (e) => {
+  async function confirmBooking(e) {
     e.preventDefault();
-    setBookingConfirmed(true);
-    if (onBookingAdded) onBookingAdded();
-    setTimeout(() => {
-      setBookingModalCar(null);
-      setBookingConfirmed(false);
-    }, 2500);
-  };
+    setBookingError("");
+    setSavingBooking(true);
+    try {
+      await createBooking({
+        carId: String(bookingModalCar.id),
+        carName: bookingModalCar.title,
+        userId: currentUser?.uid || null,
+        userName: currentUser?.displayName || bookingForm.fullName,
+        userEmail: currentUser?.email || "",
+        fullName: bookingForm.fullName,
+        phone: bookingForm.phone,
+        rentalDate: bookingForm.rentalDate,
+        days: bookingForm.days,
+      });
+      setBookingConfirmed(true);
+      if (onBookingAdded) onBookingAdded();
+      setTimeout(() => {
+        setBookingModalCar(null);
+        setBookingConfirmed(false);
+        setBookingForm({ fullName: "", phone: "", rentalDate: "", days: 1 });
+      }, 2500);
+    } catch (err) {
+      setBookingError("Could not save booking: " + err.message);
+    } finally {
+      setSavingBooking(false);
+    }
+  }
 
   const scrollToFleet = () => {
     const fleetSection = document.getElementById("fleet");
@@ -170,10 +230,8 @@ function Home({ onBookingAdded }) {
   };
 
   return (
-    <div className="home-page">
-      <Hero onExploreClick={scrollToFleet} />
-
-      <Offer />
+  <div className="home-page">
+    <Offer />
 
       <section className="fleet-section" id="fleet">
         <div className="section-header">
@@ -251,7 +309,6 @@ function Home({ onBookingAdded }) {
         </div>
       </footer>
 
-      {/* Booking Modal */}
       {bookingModalCar && (
         <div className="modal-backdrop" onClick={() => setBookingModalCar(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -264,21 +321,28 @@ function Home({ onBookingAdded }) {
                 <h3>Reserve {bookingModalCar.title}</h3>
                 <p className="modal-subtitle">${bookingModalCar.dailyRate} / day • {bookingModalCar.category}</p>
 
+                {bookingError && <p className="booking-error">{bookingError}</p>}
+
                 <div className="form-group">
                   <label>Full Name</label>
-                  <input type="text" placeholder="e.g. John Doe" required />
+                  <input type="text" name="fullName" placeholder="e.g. John Doe" value={bookingForm.fullName} onChange={(e) => setBookingForm((f) => ({ ...f, fullName: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label>Phone Number</label>
-                  <input type="tel" placeholder="+2348060121814" required />
+                  <input type="tel" name="phone" placeholder="+2348060121814" value={bookingForm.phone} onChange={(e) => setBookingForm((f) => ({ ...f, phone: e.target.value }))} required />
                 </div>
                 <div className="form-group">
                   <label>Rental Date</label>
-                  <input type="date" required />
+                  <input type="date" name="rentalDate" value={bookingForm.rentalDate} onChange={(e) => setBookingForm((f) => ({ ...f, rentalDate: e.target.value }))} required />
                 </div>
+                <div className="form-group">
+                  <label>Number of Days</label>
+                  <input type="number" name="days" min="1" value={bookingForm.days} onChange={(e) => setBookingForm((f) => ({ ...f, days: e.target.value }))} required />
+                </div>
+                <p className="booking-total">Total: <strong>${bookingModalCar.dailyRate * (bookingForm.days || 1)}</strong></p>
 
-                <button type="submit" className="btn-primary full-width">
-                  Confirm Reservation
+                <button type="submit" className="btn-primary full-width" disabled={savingBooking}>
+                  {savingBooking ? "Saving..." : "Confirm Reservation"}
                 </button>
               </form>
             ) : (
